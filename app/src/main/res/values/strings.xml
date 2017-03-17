@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">EventPlanner</string>
+    <string name="sign_out">Sign Out</string>
 </resources>

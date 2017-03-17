@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "297568853773",
-    "firebase_url": "https://eventplanner-f18ae.firebaseio.com",
-    "project_id": "eventplanner-f18ae",
-    "storage_bucket": "eventplanner-f18ae.appspot.com"
+    "project_number": "80099178476",
+    "firebase_url": "https://event-planner-b66af.firebaseio.com",
+    "project_id": "event-planner-b66af",
+    "storage_bucket": "event-planner-b66af.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:297568853773:android:0cd27c5ca212f7c0",
+        "mobilesdk_app_id": "1:80099178476:android:0cd27c5ca212f7c0",
         "android_client_info": {
           "package_name": "eventplanner.contrivers.com.eventplanner"
         }
       },
       "oauth_client": [
         {
-          "client_id": "297568853773-4sqiv49shdu6m4j53l41lrnlguj4mqjm.apps.googleusercontent.com",
+          "client_id": "80099178476-hhq56amk8o13m8v5fi8fqurbt9vorvq4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "eventplanner.contrivers.com.eventplanner",
@@ -23,13 +23,13 @@
           }
         },
         {
-          "client_id": "297568853773-tulvd445kqot05av0fdusqcke75cr5qe.apps.googleusercontent.com",
+          "client_id": "80099178476-n32gbr58gbeg5a8129c8fqprc09ibpl2.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDmHrKbyyPpzgwEBP4NRdRgybQlqx6kANk"
+          "current_key": "AIzaSyBmEntuKsmomZLpLm47xmbNxHnt-4-cp1s"
         }
       ],
       "services": {
@@ -40,7 +40,7 @@
           "status": 2,
           "other_platform_oauth_client": [
             {
-              "client_id": "297568853773-tulvd445kqot05av0fdusqcke75cr5qe.apps.googleusercontent.com",
+              "client_id": "80099178476-n32gbr58gbeg5a8129c8fqprc09ibpl2.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

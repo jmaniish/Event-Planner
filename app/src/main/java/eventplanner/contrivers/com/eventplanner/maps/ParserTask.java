@@ -56,16 +56,16 @@ public class ParserTask extends AsyncTask<String, Integer, List<Step>> {
             List<HashMap<String, String>> path = step.getPath();
 
             // Fetching all the points in i-th route
-            for (int j = 0; j < path.size(); j++) {
-                HashMap<String, String> point = path.get(j);
-                double lat = Double.parseDouble(point.get("lat"));
-                double lng = Double.parseDouble(point.get("lng"));
-                LatLng position = new LatLng(lat, lng);
-                routes.add(new Route(position, planLocation, step.getDistance(), step.getDuration()));
-            }
+//            for (int j = 0; j < path.size(); j++) {
+//                HashMap<String, String> point = path.get(j);
+//                double lat = Double.parseDouble(point.get("lat"));
+//                double lng = Double.parseDouble(point.get("lng"));
+//                LatLng position = new LatLng(lat, lng);
+//                routes.add(new Route(position, planLocation, step.getDistance(), step.getDuration()));
+//            }
             distance += step.getDistance();
             duration += step.getDuration();
-            routeChangeListener.onRouteChanged(routes);
+          //  routeChangeListener.onRouteChanged(routes);
         }
         routeChangeListener.onRouteChanged(name, distance, duration);
     }

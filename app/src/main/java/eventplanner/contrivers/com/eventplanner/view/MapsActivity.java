@@ -2,20 +2,26 @@ package eventplanner.contrivers.com.eventplanner.view;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
+import android.location.LocationListener;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.view.MenuItem;
 
+import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -28,6 +34,8 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -48,9 +56,11 @@ import eventplanner.contrivers.com.eventplanner.utils.Util;
 import static java.lang.Math.round;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
-        OnRouteChangedListener, ValueEventListener, ConnectionCallbacks, OnConnectionFailedListener {
+        OnRouteChangedListener, ValueEventListener, ConnectionCallbacks, OnConnectionFailedListener, LocationListener {
 
     public static final String MYNAME = "myname";
+    private static final String REQUESTING_LOCATION_UPDATES_KEY = "update key";
+    private static final String LOCATION_KEY = "locationkey";
     private GoogleMap mMap;
     private DatabaseReference reference;
     private Util util;
@@ -58,7 +68,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleApiClient mGoogleApiClient;
     private boolean addedLocation;
     private SharedPreferences preferences;
-    ;
+    private boolean mRequestingLocationUpdates;
+    private String mCurrentLocation;
+    private LocationRequest mLocationRequest;
+    private FirebaseAuth mFirebaseAuth;
+    private FirebaseUser mFirebaseUser;
+    private String mUsername;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +89,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         preferences.edit().putString("myname", Build.MODEL).apply();
 
+        mFirebaseAuth = FirebaseAuth.getInstance();
+        mFirebaseUser = mFirebaseAuth.getCurrentUser();
+        if (mFirebaseUser == null) {
+            // Not signed in, launch the Sign In activity
+            startActivity(new Intent(this, SignInActivity.class));
+            finish();
+            return;
+        } else {
+            mUsername = mFirebaseUser.getDisplayName();
+//            if (mFirebaseUser.getPhotoUrl() != null) {
+//                mPhotoUrl = mFirebaseUser.getPhotoUrl().toString();
+//            }
+        }
         reference = FirebaseDatabase.getInstance().getReference("plan1");
         reference.keepSynced(true);
         reference.addValueEventListener(this);
@@ -82,6 +111,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
+        }
+        updateValuesFromBundle(savedInstanceState);
+    }
+
+    private void updateValuesFromBundle(Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            if (savedInstanceState.keySet().contains(REQUESTING_LOCATION_UPDATES_KEY)) {
+                mRequestingLocationUpdates = savedInstanceState.getBoolean(
+                        REQUESTING_LOCATION_UPDATES_KEY);
+            }
+            if (savedInstanceState.keySet().contains(LOCATION_KEY)) {
+                mCurrentLocation = savedInstanceState.getString(LOCATION_KEY);
+            }
+            addOwnLocation(plan);
         }
     }
 
@@ -125,11 +168,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         MarkerOptions markerOptions = new MarkerOptions()
                 .position(location)
                 .title(name)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
-                .flat(true)
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
                 .alpha(0.7f)
-                .snippet(distance + "km  " + duration + "min")
-                .anchor(0.5f, 0.5f);
+                .snippet(distance + "km  " + duration + "min");
         Marker marker = mMap.addMarker(markerOptions);
         marker.showInfoWindow();
     }
@@ -167,7 +208,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         lineOptions.addAll(util.getPointsOf(routes));
         lineOptions.width(8);
         lineOptions.color(Color.BLUE);
-        mMap.addPolyline(lineOptions);
+        // mMap.addPolyline(lineOptions);
 
     }
 
@@ -191,12 +232,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         addOwnLocation(plan);
+        if (mRequestingLocationUpdates) {
+            startLocationUpdates();
+        }
+    }
+
+    protected void startLocationUpdates() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                mGoogleApiClient, mLocationRequest, (com.google.android.gms.location.LocationListener) this);
     }
 
     private void addOwnLocation(Plan plan) {
-        String currentLocation = getCurrentLocation();
-        if (currentLocation != null && plan != null) {
-            plan.updateOrCreate(new Person(currentLocation, preferences.getString(MYNAME, "Gopya")));
+        mCurrentLocation = getCurrentLocation();
+        if (mCurrentLocation != null && plan != null) {
+            plan.updateOrCreate(new Person(mCurrentLocation, preferences.getString(MYNAME, "Gopya")));
             reference.setValue(this.plan);
         }
     }
@@ -215,6 +267,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY,
+                mRequestingLocationUpdates);
+        savedInstanceState.putString(LOCATION_KEY, mCurrentLocation);
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
     protected void onStop() {
         mGoogleApiClient.disconnect();
         super.onStop();
@@ -228,5 +288,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mCurrentLocation = util.getString(location);
+        addOwnLocation(plan);
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.sign_out_menu:
+                mFirebaseAuth.signOut();
+                Auth.GoogleSignInApi.signOut(mGoogleApiClient);
+                mUsername = "any";
+                startActivity(new Intent(this, SignInActivity.class));
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }
